@@ -18,6 +18,8 @@ function setCover(side, item) {
   if (image.dataset.game === String(item.id)) return;
   image.dataset.game = String(item.id);
   image.classList.remove('failed');
+  image.classList.add('loading');
+  image.onload = () => image.classList.remove('loading');
   let fallbackAttempted = false;
   image.onerror = () => {
     if (!fallbackAttempted && item.header) {
@@ -124,7 +126,7 @@ async function load() {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     const data = await response.json();
     game = createGame(data.games);
-    $('data-description').textContent = `当前题库 ${data.games.length} 款游戏。评分获取日期：${new Date(data.updatedAt).toLocaleDateString('zh-CN', { timeZone: 'Asia/Hong_Kong' })}。一轮内不重复；题库用完后重新洗牌。`;
+    $('data-description').textContent = `当前题库 ${data.games.length} 款游戏。评分获取日期：${new Date(data.updatedAt).toLocaleDateString('zh-CN', { timeZone: 'Asia/Hong_Kong' })}。按随机顺序出题，题库用完后重新洗牌，相邻两款不会相同。`;
     render();
   } catch (error) {
     $('feedback-box').className = 'feedback error';

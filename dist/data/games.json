@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-10-26T04:34:15.467Z",
+  "updatedAt": "2026-10-26T04:41:27.737Z",
   "description": "PC Metacritic scores attributed by the Steam store API. A curated snapshot, not a live or complete Metacritic catalogue.",
   "games": [
     {
@@ -485,6 +485,72 @@
       "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/236430/header.jpg?t=1726158600",
       "source": "https://www.metacritic.com/game/pc/dark-souls-ii?ftag=MCD-06-10aaa1f",
       "store": "https://store.steampowered.com/app/236430/"
+    },
+    {
+      "id": 209160,
+      "name": "Call of Duty®: Ghosts",
+      "score": 68,
+      "platform": "PC",
+      "year": "2014",
+      "cover": "https://cdn.akamai.steamstatic.com/steam/apps/209160/library_600x900.jpg",
+      "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/209160/header.jpg?t=1780963043",
+      "source": "https://www.metacritic.com/game/pc/call-of-duty-ghosts?ftag=MCD-06-10aaa1f",
+      "store": "https://store.steampowered.com/app/209160/"
+    },
+    {
+      "id": 223100,
+      "name": "Homefront®: The Revolution",
+      "score": 54,
+      "platform": "PC",
+      "year": "2016",
+      "cover": "https://cdn.akamai.steamstatic.com/steam/apps/223100/library_600x900.jpg",
+      "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/223100/header.jpg?t=1614763860",
+      "source": "https://www.metacritic.com/game/pc/homefront-the-revolution?ftag=MCD-06-10aaa1f",
+      "store": "https://store.steampowered.com/app/223100/"
+    },
+    {
+      "id": 209100,
+      "name": "Resident Evil: Operation Raccoon City",
+      "score": 48,
+      "platform": "PC",
+      "year": "2012",
+      "cover": "https://cdn.akamai.steamstatic.com/steam/apps/209100/library_600x900.jpg",
+      "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/209100/header.jpg?t=1684279049",
+      "source": "https://www.metacritic.com/game/pc/resident-evil-operation-raccoon-city?ftag=MCD-06-10aaa1f",
+      "store": "https://store.steampowered.com/app/209100/"
+    },
+    {
+      "id": 209000,
+      "name": "Batman™: Arkham Origins",
+      "score": 74,
+      "platform": "PC",
+      "year": "2013",
+      "cover": "https://cdn.akamai.steamstatic.com/steam/apps/209000/library_600x900.jpg",
+      "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/209000/header.jpg?t=1746562474",
+      "source": "https://www.metacritic.com/game/pc/batman-arkham-origins?ftag=MCD-06-10aaa1f",
+      "store": "https://store.steampowered.com/app/209000/"
+    },
+    {
+      "id": 217920,
+      "name": "Alien Rage - Unlimited",
+      "score": 52,
+      "platform": "PC",
+      "year": "2013",
+      "cover": "https://cdn.akamai.steamstatic.com/steam/apps/217920/library_600x900.jpg",
+      "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/217920/header.jpg?t=1692600949",
+      "source": "https://www.metacritic.com/game/pc/alien-rage?ftag=MCD-06-10aaa1f",
+      "store": "https://store.steampowered.com/app/217920/"
+    },
+    {
+      "id": 265930,
+      "name": "Goat Simulator",
+      "score": 62,
+      "platform": "PC",
+      "year": "2014",
+      "cover": "https://cdn.akamai.steamstatic.com/steam/apps/265930/library_600x900.jpg",
+      "header": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/265930/header.jpg?t=1728895842",
+      "source": "https://www.metacritic.com/game/pc/goat-simulator?ftag=MCD-06-10aaa1f",
+      "store": "https://store.steampowered.com/app/265930/"
     }
   ]
 }
