@@ -4,7 +4,7 @@ export function validateGames(games) {
   if (!Array.isArray(games) || games.length < 2) throw new Error('题库至少需要两款游戏。');
   const ids = new Set();
   for (const game of games) {
-    if (!game || !Number.isInteger(game.id) || ids.has(game.id) || typeof game.name !== 'string' || !game.name.trim() || !Number.isInteger(game.score) || game.score < 0 || game.score > 100) throw new Error('题库格式不正确，请检查数据文件。');
+    if (!game || !Number.isInteger(game.id) || ids.has(game.id) || typeof game.name !== 'string' || !game.name.trim() || !Number.isFinite(game.score) || game.score < 0 || game.score > 100) throw new Error('Invalid game data.');
     ids.add(game.id);
   }
   return games;
@@ -42,9 +42,10 @@ export function createGame(games, random = Math.random) {
     state.phase = state.mistakes === MAX_MISTAKES ? 'over' : 'revealed';
     return snapshot();
   }
-  function next() {
+  function next(challenger) {
     if (state.phase !== 'revealed') return snapshot();
-    state = { ...state, left: state.right, right: draw(state.right.id), round: state.round + 1, phase: 'guessing', result: null };
+    if (challenger) validateGames([state.right, challenger]);
+    state = { ...state, left: state.right, right: challenger || draw(state.right.id), round: state.round + 1, phase: 'guessing', result: null };
     return snapshot();
   }
   restart();

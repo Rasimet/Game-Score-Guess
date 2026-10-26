@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "start": "node scripts/serve.mjs --open",
-    "test": "node --test tests/engine.test.mjs",
+    "test": "node --test",
     "refresh-data": "node scripts/refresh-data.mjs"
   },
   "engines": { "node": ">=20" }

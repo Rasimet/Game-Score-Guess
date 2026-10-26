@@ -1,26 +1,15 @@
-// Uses the public Steam store endpoint to retrieve its attributed Metacritic PC scores.
-// The game itself reads a local snapshot and needs no API key or external service.
-import { mkdir, writeFile } from 'node:fs/promises';
-
-const ids = [1145360,504230,620,400,292030,1245620,570940,374320,367520,105600,413150,632360,646570,588650,753640,1091500,1057090,387290,391540,268910,435150,1086940,782330,379720,1151640,1593500,1817070,1174180,1222140,220,70,397540,582010,548430,264710,249130,203160,391220,814380,239140,203770,8930,289070,255710,960090,1072420,236430,480490,208650,209160,113400,223100,209100,950670,1996720,1259420,209000,217920,265930,1290000];
+// Records real Steam review summaries for offline demonstration; no API key.
+import { readFile, writeFile } from 'node:fs/promises';
+import { createSteamClient } from './steam.mjs';
+const previous = JSON.parse(await readFile(new URL('../dist/data/games.json', import.meta.url), 'utf8'));
+const client = createSteamClient();
 const games = [];
-for (let i = 0; i < ids.length; i += 4) {
-  const batch = await Promise.all(ids.slice(i, i + 4).map(async id => {
-    try {
-      const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${id}&l=english`, { signal: AbortSignal.timeout(20000) });
-      if (!response.ok) throw new Error(`HTTP ${response.status}`);
-      const payload = await response.json();
-      const data = payload[id]?.data;
-      if (!payload[id]?.success || !Number.isInteger(data?.metacritic?.score)) return null;
-      return { id, name: data.name, score: data.metacritic.score, platform: 'PC', year: data.release_date?.date?.match(/\d{4}/)?.[0] ?? '', cover: `https://cdn.akamai.steamstatic.com/steam/apps/${id}/library_600x900.jpg`, header: data.header_image, source: data.metacritic.url, store: `https://store.steampowered.com/app/${id}/` };
-    } catch (error) {
-      console.error(`Skipping ${id}: ${error.message}`);
-      return null;
-    }
-  }));
-  games.push(...batch.filter(Boolean));
+for (const item of previous.games) {
+  try {
+    const { source: oldSource, score: oldScore, store, criticCount, ...metadata } = item;
+    games.push({ ...metadata, platform: 'STEAM', source: `https://store.steampowered.com/app/${item.id}/#app_reviews_hash`, ...await client.reviews(item.id) });
+  } catch { console.error(`Could not retrieve Steam summary for app ${item.id}.`); }
 }
-if (games.length < 15) throw new Error(`Only ${games.length} games retrieved. Keeping existing snapshot.`);
-await mkdir(new URL('../dist/data/', import.meta.url), { recursive: true });
-await writeFile(new URL('../dist/data/games.json', import.meta.url), JSON.stringify({ updatedAt: new Date().toISOString(), description: 'PC Metacritic scores attributed by the Steam store API. A curated snapshot, not a live or complete Metacritic catalogue.', games }, null, 2) + '\n');
-console.log(`Saved ${games.length} games.`);
+if (games.length < 15) throw new Error('Too few valid summaries. Existing snapshot was preserved.');
+await writeFile(new URL('../dist/data/games.json', import.meta.url), JSON.stringify({ provider: 'STEAM', policy: 'steam-purchases-all-languages-v1', mode: 'snapshot', updatedAt: new Date().toISOString(), games }, null, 2) + '\n');
+console.log(`Saved ${games.length} real Steam review summaries.`);

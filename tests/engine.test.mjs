@@ -64,12 +64,24 @@ test('deck refills safely, including a two-game pool and long games', () => {
 test('empty, malformed, duplicate, and out-of-range data are rejected', () => {
   for (const pool of [[], null, [games[0]], [games[0], games[0]], [games[0], { id: 2, name: 'B', score: 101 }], [games[0], { id: 2, name: '', score: 70 }]]) assert.throws(() => createGame(pool));
 });
-test('shipped snapshot is playable and has attributed PC scores', async () => {
+test('shipped snapshot has authentic Steam review counts and matching percentages', async () => {
   const { games: snapshot } = JSON.parse(await readFile(new URL('../dist/data/games.json', import.meta.url), 'utf8'));
   assert.ok(validateGames(snapshot).length >= 15);
   for (const item of snapshot) {
-    assert.equal(item.platform, 'PC');
-    assert.match(item.source, /^https?:\/\/(www\.)?metacritic\.com\//);
+    assert.equal(item.platform, 'STEAM');
+    assert.equal(item.positiveCount + item.negativeCount, item.totalReviews);
+    assert.ok(item.totalReviews >= 100);
+    assert.equal(item.score, Math.round(item.positiveCount / item.totalReviews * 1000) / 10);
+    assert.match(item.source, /^https:\/\/store\.steampowered\.com\/app\//);
     assert.match(item.cover, /^https:\/\//);
   }
+});
+test('decimal percentages and streamed challengers preserve the right-side game', () => {
+  const game = createGame([{ id: 1, name: 'A', score: 88.1 }, { id: 2, name: 'B', score: 88.1 }]);
+  assert.equal(game.guess('right').result.tie, true);
+  const previous = game.snapshot().right;
+  assert.throws(() => game.next(previous));
+  const next = game.next({ id: 3, name: 'C', score: 90.2 });
+  assert.equal(next.left.id, previous.id);
+  assert.equal(next.right.id, 3);
 });

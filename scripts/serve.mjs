@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawn } from 'node:child_process';
+import { createSteamClient } from './steam.mjs';
 
 if (Number(process.versions.node.split('.')[0]) < 20) {
   console.error('Score Duel requires Node.js 20 or newer. Download: https://nodejs.org/');
@@ -21,13 +22,25 @@ function openBrowser() {
 }
 
 const root = fileURLToPath(new URL('../dist/', import.meta.url));
+const steam = createSteamClient({ cachePath: fileURLToPath(new URL('../.cache/steam.json', import.meta.url)), snapshotPath: path.join(root, 'data/games.json') });
 const mime = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.jpg': 'image/jpeg', '.svg': 'image/svg+xml' };
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url, 'http://127.0.0.1');
     if (url.pathname === '/api/health') {
       response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      response.end(JSON.stringify({ app: 'score-duel', version: 1 }));
+      response.end(JSON.stringify({ app: 'score-duel', version: 2 }));
+      return;
+    }
+    if (url.pathname === '/api/games') {
+      try {
+        const data = await steam.batch();
+        response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        response.end(JSON.stringify(data));
+      } catch {
+        response.writeHead(503, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
+        response.end(JSON.stringify({ error: 'unavailable' }));
+      }
       return;
     }
     const filename = path.resolve(root, '.' + decodeURIComponent(url.pathname === '/' ? '/index.html' : url.pathname));
@@ -48,9 +61,14 @@ server.on('error', async error => {
     try {
       const response = await fetch(`${localUrl}/api/health`, { signal: AbortSignal.timeout(1500) });
       const health = response.ok ? await response.json() : null;
-      if (health?.app === 'score-duel' && health.version === 1) {
+      if (health?.app === 'score-duel' && health.version === 2) {
         console.log(`Score Duel is already running: ${localUrl}\nKeep the original server window open.`);
         openBrowser();
+        return;
+      }
+      if (health?.app === 'score-duel') {
+        console.error('An older Score Duel server is running. Stop it with Ctrl+C, then start again.');
+        process.exitCode = 1;
         return;
       }
     } catch { /* Another application may be using the port. Do not stop it. */ }
