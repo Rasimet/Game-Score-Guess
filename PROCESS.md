@@ -1,75 +1,71 @@
-# 开发过程 · Score Duel
+# My Development Process — Score Duel
 
-> 本文档由 Codex 根据实际开发过程起草。提交前请本人核对，并补充真实用户试用。标记“待填写”的事项尚未完成。
+## Starting Idea
 
-## 初始想法与互动
+I wanted to make a short guessing game for people who enjoy video games. My starting idea was to compare two games using Metacritic scores. I refined the interaction so that the left game's score was visible and the right game's score was hidden. After a guess, both scores would be revealed. The right game would then move to the left for the next round, and five mistakes would end the run.
 
-最初设计是比较两款游戏的 Metacritic 评分。需求随后明确为左侧公开评分、右侧隐藏；选出更高者后揭晓，下一轮右侧移到左侧，累计错五次结束。目标用户是愿意花几分钟挑战游戏直觉的游戏爱好者。
+I chose this loop because each answer gives the player information they can use in the next round. The player clicks a cover, receives a clear result and decides when to continue.
 
-这个设计把点击、数值比较、结果反馈和继续选择连接起来，上一轮学到的分数成为下一轮基准。
+## Design and Code Changes
 
-## 数据来源的变化
+I investigated Metacritic data sources and briefly considered IGDB. I eventually chose Steam positive review percentages so that the project could use real player review statistics without requiring the player to configure API credentials. I calculate approval as positive reviews divided by total reviews, rounded to one decimal place.
 
-第一版使用 Steam 商店提供的 Metacritic PC 评分快照。随后调研了两个 Metacritic 开源项目：现有解析依赖旧网站结构，无法直接使用，没有把这些项目的代码复制进本仓库。
+I initially accepted games with more than 100 reviews, then increased the requirement to more than 500 reviews to reduce the number of obscure games. I also added Chinese and English controls that preserve the current game and score when the language changes.
 
-曾计划改用 IGDB，开始准备接入和配置说明，但用户随后决定改用 **Steam 玩家好评率**。最终版本撤去未完成的 IGDB 文件，不要求 Twitch 或 IGDB 凭据，也没有把旧 Metacritic 数据换个标签当成新数据。
+During my own local testing, I noticed that games appeared repeatedly. With Codex's help, I found that online batches contained only a few games, earlier draws were not remembered, and restarting reused the latest small batch. I changed the design to accumulate games and retain draw history across rounds and replays until the page is reloaded. The server also excludes collected game IDs from new samples. If no unseen games can be obtained, the available pool is reshuffled and the data dialog explains this limitation.
 
-Steam 好评率由官方评价 API 返回的好评数和总评价数计算，统一选择所有语言、Steam 购买者、过滤非相关活动，超过 500 条评价（至少 501 条）。显示与比较都按一位小数，同值算答对。备用题库也已实际重新获取为 50 款真实 Steam 游戏的评价统计，保留原始计数和时间。
+I also reported that double-clicking the Windows launcher appeared to do nothing. The server was already running, and the duplicate launcher closed quickly. I had Codex revise it to keep the status and local address visible and improve browser-opening feedback.
 
-在线模式通过 Steam 商店搜索目录抽取候选，随后使用官方评价接口；商店搜索并非保证长期兼容的开发者 API。因此增加最近缓存和仓库快照两层回退，并在页面标注来源模式。目录筛选与有上限的请求次数意味着不保证全库覆盖或均匀抽样。
+## User Trial and My Response
 
-## 设计与代码修改
+I asked another person to try the game. After playing, they told me that many of the games were very obscure. This feedback suggested that the selection needed to include more games that players might recognise.
 
-1. 保留“揭晓 → 主动点击下一轮”，让玩家有时间读结果。状态区分 guessing、revealed、over，重复点击不会多次计分。
-2. 浏览器检查中发现换轮时可能短暂显示旧封面和新名称，增加图片加载状态；加载失败后尝试备用图，再失败显示渐变。
-3. 按用户要求移除独立 CREDITS 文件，来源说明合并到 README。新增双击运行文件和浏览器自动打开，不依赖 npm 安装。
-4. 加入 **中文 / EN**：静态文案、动态结果、错误提示、无障碍名称、规则与成绩均通过统一文案模块渲染。切换语言只重绘，不重新抽题或清零；使用 localStorage 保存偏好，不可用时仍能切换。
-5. 换成好评率后保留一位小数并显示 % 与评价数量，避免把 Steam 的评价类别编号当作评分。新批次异步获取，等待和失败时保留上一轮结果；当前游戏始终承接到左侧。
-6. 商店默认搜索包含大量未发售或评价不足的条目，技术检查后改用评价排序目录并先过滤明显评价不足的候选；批次从多个页面取样，避免只抽到一页中好评率非常相近的游戏。这个改动来自技术检查，不是已完成的真人试用。
+In response, I added a minimum review-count requirement. I first required more than 100 reviews, then raised the threshold to more than 500 reviews. The filter now accepts only games with at least 501 matching Steam reviews, and it applies to online results, cached data and the bundled snapshot.
 
-## 真人试用（必须补充）
+I chose review count as a practical way to reduce the chance of selecting very obscure games. It does not guarantee that every game will be familiar, but it gives the selection a clearer audience focus. I have not recorded a follow-up trial, so I cannot yet claim that the participant found the revised selection more familiar.
 
-**尚未完成。AI 和浏览器技术测试不代替至少一位其他人的真实试用。**
+The separate repetition problem described above came from my own testing rather than this participant's feedback.
 
-请一位其他人不听解释先试用，观察首次点击、对百分比的理解、下一轮与失误反馈；同时可请其尝试中英文切换。无需记录身份或上传录像。
+## AI Tools and My Decisions
 
-- 日期和设备：**待填写**
-- 首次尝试的动作：**待填写实际观察**
-- 犹豫、误操作或理解不清之处：**待填写实际观察**
-- 是否理解左右承接、好评率和五次失误：**待填写实际观察**
-- 根据观察的一项改进，或保留原设计的具体理由：**待填写**
-- 改进后再次尝试的结果（如有）：**待填写**
+I used **OpenAI Codex** to help implement the HTML, CSS and JavaScript interface, Node.js server, Steam data requests, caching, language switching, automated tests and Windows launcher. I also used it to investigate data-source options, check the interface through browser automation, debug problems and draft documentation, including this process record.
 
-## AI 使用说明
+I supplied the game idea and requested the changes to the data source, review threshold, language options and repeat-game behaviour. A substantial part of the implementation was generated or revised with AI assistance.
 
-使用 OpenAI Codex 将用户提出的玩法实现为 HTML/CSS/JavaScript，编写 Node 后端、Steam 数据脚本、缓存与回退、双语文本、自动化测试和文档，并进行浏览器技术检查。
+One suggestion I kept was to count either choice as correct when the displayed percentages are equal. This gives a clear, fair result at the precision shown to the player.
 
-- 保留的建议：同分时两边都算对，并在规则中说明；保留结果让玩家主动继续。
-- 改变的方案：用户最终选择 Steam 好评率，撤掉原 Metacritic 评分与未完成的 IGDB 接入；采用真实评价计数，不使用模拟评分。
-- 修改的实现：换轮时隐藏尚未加载的新封面；语言切换不重开游戏；增加请求上限、缓存和快照。
+One approach I changed was the small-batch selection system. I did not keep its original behaviour after I noticed frequent repeats; I asked for a cumulative pool and draw history. I also decided against continuing the proposed IGDB setup and chose Steam approval percentages instead.
 
-本人提交前应核对这些记录，并能解释至少一段输入到反馈的代码。
+## Technical Checks and Development History
 
-## 可解释的代码链
+With Codex's assistance, I used Node's built-in test runner and browser checks during development. The latest recorded run passed 19 tests, covering scoring, repeated clicks, ties, the fifth mistake, round carry-over, review thresholds, data fallback, draw history and bilingual messages. Browser checks also confirmed that new rounds carry the right game to the left and that replay resets the score.
 
-封面点击调用 app.js 的 guess(side)，再进入 engine.js 的比较逻辑；该函数只在 guessing 状态接受输入，比较显示精度一致的 score，并更新 correct 或 mistakes。render() 根据结果公开右侧好评率、显示结果、更新机会并禁用封面。下一轮调用 next(challenger)，其中 left 使用上一轮的 right，新游戏成为 right。
+I have retained the Git history rather than replacing it with a single final version. Existing commits show the change to Steam data and the successive review thresholds, including:
 
-切换语言调用 applyLanguage()；它更新文案与 HTML lang 后调用 render()，不调用 restart() 或 guess()，因此游戏状态不变。
+- `26e3792` — Switch to live Steam approval with cached fallback and Chinese-English UI.
+- `41c772a` — Require more than 100 matching Steam reviews for every game.
+- `8505a23` — Raise Steam review eligibility threshold to more than 500.
 
-## 验证记录
+These commits show how I revised the selection criteria during development, including the review-count filter discussed in the user trial above.
 
-- 2026-10-26：初版六项逻辑测试及浏览器流程验证，完成失误结束、重玩、题库缺失恢复和图片降级检查。
-- 2026-10-26：Windows 启动文件、重复启动复用及 Node PATH 备用运行时检查通过。
-- 2026-10-26：Steam 版本 12 项自动化测试通过，覆盖实际评价计数、同分、连续承接、断网回退、目录解析和中英文文本完整性。
-- 2026-10-26：实际官方接口请求取得好评数、差评数、评价总数；实际商店目录取样成功并验证在线批次。
-- 2026-10-26：浏览器验证揭晓后切换英文，左右游戏、好评率和得分不变；英文规则与数据说明正常，下一轮正确承接上一轮右侧游戏。
-- 2026-10-26：英文版连续五次失误后显示成绩，弹窗内可切换中文，重玩清零；刷新后保留语言偏好。检查 390px 手机与 1280px 桌面布局并保存中英文截图。
-- 2026-10-26：按用户要求将评价数量限制收紧为严格大于 100（至少 101 条），同时约束在线数据、缓存、备用快照和前端加载。增加恰好 100 条拒绝、101 条通过的边界检查，13 项测试通过。
-- 2026-10-26：用户将门槛进一步提高至严格大于 500（至少 501 条）；同步在线、缓存、快照、前端及双语说明，500/501 边界检查与全部 13 项测试通过。
-- 2026-10-26：用户反馈双击启动文件看起来没有反应。检查时发现服务已经运行，重复启动会立即结束，而浏览器打开步骤缺少反馈。改为保留启动窗口，显示项目路径、网址与运行状态；Windows 使用 PowerShell 调用默认浏览器，失败时提示手动打开网址。验证重复启动后窗口等待按键，服务正常响应，默认浏览器显示游戏页面；13 项测试通过。这是启动问题的排查记录，不代替前述真人玩法试用。
-- 2026-10-26：用户反馈游戏容易重复。实际接口检查得到 4 款的小批次，代码只排除当前左右游戏，重玩又只使用最后一批，导致旧题很快回流。增加独立累积题库和抽取记录，跨批次、重玩与刷新题库保留记录，后端跳过已收集 ID 且同批不重复取搜索页；断网时合并缓存与快照，全部可用新题耗尽后才洗牌，并显示说明。增加长局、跨局、重叠批次、有限题库及后端排除检查，19 项测试通过。这条用户反馈不替代尚未补充的正式真人玩法试用记录。
-- 2026-10-26：重启本地服务后，实际接口两批数据分别为 4 款在线统计与 96 款回退数据，排除参数生效，交集为空。浏览器完成连续三轮与重玩检查，新挑战者未重复，右侧正确承接到左侧；数据弹窗显示本次累积 96 款。截图保存为 `docs/screenshot-pool.png`。
+## Credits
 
-## 提交前
+### Review Data and Game Information
 
-按 README 从新终端运行，真实试用并填写记录，核对 AI 使用说明，将仓库推送到本人公开 GitHub，退出登录验证，再提交仓库 URL。在线游戏需要 Node 后端；静态托管只支持明确标注的真实快照模式。
+I use data supplied by **Valve / Steam**:
+
+- **Review statistics:** the official [Steam IUserReviewsService documentation](https://partner.steamgames.com/doc/webapi/IUserReviewsService) describes the `GetAppReviews/v1/` endpoint used by the project. I calculate the displayed percentages from its positive and total review counts, using all languages, Steam purchases and off-topic filtering. Only games with at least 501 matching reviews are accepted.
+- **Game discovery and metadata:** the public [Steam store search endpoint](https://store.steampowered.com/search/results/) supplies candidate game IDs, names, release information and cover links. This storefront endpoint has no guarantee of stable developer API compatibility; my sampling does not cover the entire Steam library uniformly.
+- **Saved fallback data:** `dist/data/games.json` contains review statistics for 50 real Steam games retrieved on 26 October 2026. Each record includes the original counts, retrieval time and Steam source link. These are saved Steam statistics, not invented scores. Local cached statistics also come from the same Steam review service.
+
+### Images and Fonts
+
+Game covers are loaded remotely from Steam's CDN, including `cdn.akamai.steamstatic.com` and Steam store asset hosts. The game artwork, names and trademarks belong to their respective rights holders. I did not create the cover artwork or include the original image files in the repository.
+
+The interface uses [DM Sans](https://fonts.google.com/specimen/DM+Sans) and [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk), provided through Google Fonts under the SIL Open Font License. System fonts are used when these fonts cannot load.
+
+### Code and Tools
+
+The project code was generated and revised with OpenAI Codex as described above. No course-example code or code from the investigated Metacritic repositories was incorporated into this implementation. The screenshots in this repository show the project interface captured during development.
+
+This is a student project and is not affiliated with or endorsed by Valve or the game publishers.
