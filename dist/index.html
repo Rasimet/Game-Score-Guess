@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f3ec">
+  <meta name="description" content="两款游戏，谁的评分更高？用五次机会挑战你的游戏直觉。">
+  <title>Score Duel — 游戏评分对决</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="Score Duel 首页"><span class="brand-icon" aria-hidden="true">✳</span> score<span class="brand-light">duel</span><span class="brand-dot">.</span></a>
+    <span class="header-note">A LITTLE GAME OF GREAT TASTE</span>
+    <button class="text-button" id="rules-button" type="button">怎么玩 <span aria-hidden="true">↗</span></button>
+  </header>
+
+  <main>
+    <section class="intro" aria-labelledby="page-title">
+      <div class="eyebrow"><span class="live-dot"></span> THE METASCORE CHALLENGE</div>
+      <h1 id="page-title">好游戏，<span>你说了算？</span></h1>
+      <p>两款游戏，谁的媒体评分更高？<strong>点击你看好的封面。</strong></p>
+    </section>
+
+    <section class="play-area" aria-label="评分对决" id="play-area" aria-busy="true">
+      <div class="game-toolbar">
+        <div class="round"><span class="tiny-label">ROUND</span><strong id="round">01</strong><span class="round-divider"></span><span id="round-instruction">凭直觉，选一边。</span></div>
+        <div class="stats"><span class="correct-count">答对 <strong id="correct">0</strong></span><span class="stat-divider"></span><span id="lives" class="lives" aria-label="剩余 5 次机会"></span></div>
+      </div>
+
+      <div class="arena">
+        <div class="game-column left-column">
+          <div class="card-heading"><span><span class="small-dot"></span> 已知评分</span><span>THE BENCHMARK</span></div>
+          <button class="game-card" id="left-card" type="button" disabled>
+            <img class="cover" id="left-cover" alt="" draggable="false">
+            <div class="card-shade"></div>
+            <span class="card-index">01 / PLAYER'S PICK</span>
+            <span class="pick-indicator" id="left-pick">你的选择 ↗</span>
+            <span class="card-content"><span class="game-meta" id="left-meta">PC</span><span class="game-name" id="left-name">正在准备对决…</span><span class="score-row"><span class="score" id="left-score">—</span><span class="score-caption">METASCORE<span>媒体综合评分 / 100</span></span></span></span>
+            <span class="card-choice"><span>这款评分更高</span><span aria-hidden="true">↗</span></span>
+          </button>
+          <div class="card-footnote"><span>← <span class="desktop-only">方向键左 / </span>点击封面选择</span><a id="left-source" target="_blank" rel="noopener noreferrer" hidden>评分来源 ↗</a></div>
+        </div>
+
+        <div class="versus" aria-hidden="true"><span>VS</span></div>
+
+        <div class="game-column right-column">
+          <div class="card-heading"><span><span class="small-dot purple"></span> 等你揭晓</span><span>THE CHALLENGER</span></div>
+          <button class="game-card" id="right-card" type="button" disabled>
+            <img class="cover" id="right-cover" alt="" draggable="false">
+            <div class="card-shade"></div>
+            <span class="card-index">02 / TRUST YOUR INSTINCT</span>
+            <span class="pick-indicator" id="right-pick">你的选择 ↗</span>
+            <span class="card-content"><span class="game-meta" id="right-meta">PC</span><span class="game-name" id="right-name">下一位挑战者即将登场</span><span class="score-row"><span class="score hidden-score" id="right-score">?</span><span class="score-caption">METASCORE<span id="right-score-caption">猜猜它有多少分</span></span></span></span>
+            <span class="card-choice"><span>这款评分更高</span><span aria-hidden="true">↗</span></span>
+          </button>
+          <div class="card-footnote"><span>→ <span class="desktop-only">方向键右 / </span>点击封面选择</span><a id="right-source" target="_blank" rel="noopener noreferrer" hidden>评分来源 ↗</a></div>
+        </div>
+      </div>
+
+      <div class="feedback" id="feedback-box">
+        <div class="feedback-content"><span class="feedback-icon" id="feedback-icon" aria-hidden="true">↖</span><div><strong id="feedback-title" role="status" aria-live="polite">你的游戏直觉，值多少分？</strong><p id="feedback-detail">左边分数已公开。选出评分更高的一款，同分选哪边都算对。</p></div></div>
+        <button class="primary-button" id="next-button" type="button" hidden>下一轮 <span aria-hidden="true">→</span></button>
+        <button class="primary-button" id="retry-button" type="button" hidden>重新加载 ↻</button>
+      </div>
+    </section>
+
+    <div class="under-game"><span><span class="mini-icon">♡</span> 五次失误机会 · 看完结果再继续 · 同分也算对</span><button class="text-button" id="restart-button" type="button" disabled>重新开始 ↻</button></div>
+
+    <footer><div><span class="footer-brand">scoreduel.</span><span>为游戏热爱者准备的一场小对决。</span></div><button type="button" class="text-button" id="data-button">数据与致谢 ↗</button></footer>
+  </main>
+
+  <dialog id="rules-dialog" aria-labelledby="rules-title"><button class="close-button" type="button" data-close aria-label="关闭">×</button><span class="eyebrow">HOW TO PLAY</span><h2 id="rules-title">相信你的游戏直觉。</h2><ol><li>左边公开 PC 媒体评分，右边暂时隐藏。</li><li>点击评分更高的游戏封面，也可以按 ← / →。</li><li>揭晓后点击“下一轮”或按 Enter，右边的游戏会移到左边。</li><li>同分时两边都算对；累计错 5 次后结束，看看你能答对多少题。</li></ol><p>重新开始会清空本局成绩，并重新抽取游戏。</p></dialog>
+  <dialog id="data-dialog" aria-labelledby="data-title"><button class="close-button" type="button" data-close aria-label="关闭">×</button><span class="eyebrow">BEHIND THE SCORES</span><h2 id="data-title">评分有出处，热爱无高低。</h2><p id="data-description">正在读取题库信息。</p><p>使用 Steam 商店公开接口提供并注明出处的 Metacritic 评分，统一为 <strong>PC 平台媒体评分</strong>，不使用玩家评分。它是本地评分快照，并非从 Metacritic 全站实时抓取。</p><p>游戏图像从 Steam CDN 加载，图像与游戏名称归各自权利人所有。本项目仅作课堂互动演示，与 Metacritic、Valve 或游戏发行商无隶属关系。</p><p>图片不可用时会显示渐变背景与游戏名称，不影响游玩。评分只是一种参考，你喜欢的游戏永远可以是满分。</p></dialog>
+  <dialog id="over-dialog" class="over-dialog" aria-labelledby="over-title"><span class="eyebrow">THAT'S A WRAP</span><div class="end-symbol" aria-hidden="true">✳</div><h2 id="over-title">直觉挑战，暂告一段落。</h2><p>五次机会已用完。本局总共答对</p><div class="final-score" id="final-score">0</div><span class="final-label">道题</span><p id="final-detail"></p><button class="primary-button" id="play-again" type="button">再玩一次 <span aria-hidden="true">↻</span></button><button class="text-button" id="review-button" type="button">回看最后一题</button></dialog>
+</body>
+</html>
