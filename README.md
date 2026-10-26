@@ -2,6 +2,8 @@
 
 一个给游戏爱好者的轻量互动网页：两款游戏，谁的 Metacritic 媒体评分更高？用五次失误机会挑战自己的游戏直觉。
 
+[Sites 在线演示（当前仅创建者可访问）](https://score-duel-assignment3.mossycrown51.chatgpt.site)。课堂提交仍需公开 GitHub 仓库，不要把私有演示当作公开提交链接。
+
 ![Score Duel 网页截图](docs/screenshot.png)
 
 ## 玩法
