@@ -52,6 +52,42 @@ test('outage falls back to saved real Steam snapshot, never old Metacritic data'
     await assert.rejects(()=>noFallback.batch());
   }finally{await rm(dir,{recursive:true,force:true});}
 });
+
+test('online sampling excludes collected games before review requests and samples distinct pages',async()=>{
+  const reviewed=[], starts=[];
+  const client=createSteamClient({intervalMs:0,pick:()=>0,fetchImpl:async url=>{
+    if(url.includes('/search/results/')){
+      const start=Number(new URL(url).searchParams.get('start'));
+      starts.push(start);
+      const ids=[1,2,3+start,4+start,5+start,6+start];
+      return Response.json({success:1,total_count:250,results_html:ids.map(id=>`<a data-ds-appid="${id}"><span class="title">Game ${id}</span></a>`).join('')});
+    }
+    const input=JSON.parse(new URL(url).searchParams.get('input_json'));
+    reviewed.push(input.appid);
+    return Response.json({response:{query_summary:{total_positive:900,total_negative:100,total_reviews:1000}}});
+  }});
+  const batch=await client.batch({exclude:[1,2]});
+  assert.equal(batch.mode,'live');
+  assert.equal(batch.games.length,6);
+  assert.ok(reviewed.every(id=>id!==1&&id!==2));
+  assert.equal(new Set(starts.slice(1)).size,starts.length-1);
+});
+
+test('small caches merge with the offline library and prefer games outside the exclusion list',async()=>{
+  const dir=await mkdtemp(path.join(os.tmpdir(),'score-duel-pool-'));
+  try {
+    const snapshotClient=createSteamClient({snapshotPath:new URL('../dist/data/games.json',import.meta.url),fetchImpl:async()=>{throw new Error('offline');}});
+    const snapshot=await snapshotClient.batch();
+    const cachePath=path.join(dir,'cache.json');
+    const cached=snapshot.games.slice(0,2);
+    await writeFile(cachePath,JSON.stringify({...snapshot,games:cached}));
+    const client=createSteamClient({cachePath,snapshotPath:new URL('../dist/data/games.json',import.meta.url),intervalMs:0,fetchImpl:async()=>{throw new Error('offline');}});
+    const data=await client.batch({exclude:cached.map(game=>game.id)});
+    assert.equal(data.games.length,snapshot.games.length-2);
+    assert.ok(data.games.every(game=>!cached.some(old=>old.id===game.id)));
+    assert.ok(data.games.every(game=>game.dataMode==='snapshot'));
+  } finally { await rm(dir,{recursive:true,force:true}); }
+});
 test('both languages cover all messages and interpolate result feedback',()=>{
   assert.deepEqual(Object.keys(messages.zh).sort(),Object.keys(messages.en).sort());
   for(const lang of ['zh','en'])for(const [key,value]of Object.entries(messages[lang]))assert.ok(value.trim(),`${lang}.${key}`);

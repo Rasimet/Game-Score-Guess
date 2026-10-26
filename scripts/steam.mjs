@@ -37,7 +37,8 @@ export function parseSearchPage(html) {
   return [...games.values()];
 }
 export function createSteamClient({ fetchImpl = fetch, cachePath, snapshotPath, now = Date.now, pick = randomInt, intervalMs = 300 } = {}) {
-  let lastRequest = 0, gate = Promise.resolve(), catalog, active;
+  let lastRequest = 0, gate = Promise.resolve(), catalog;
+  const active = new Map();
   const summaries = new Map();
   async function request(url, deadline = Infinity) {
     const slot = gate.then(async () => {
@@ -80,17 +81,19 @@ export function createSteamClient({ fetchImpl = fetch, cachePath, snapshotPath, 
       return games.length >= 2 ? { ...data, mode, games } : null;
     } catch { return null; }
   }
-  async function liveBatch() {
+  async function liveBatch(excluded) {
     const deadline = now() + 24000;
     if (!catalog || now() - catalog.fetchedAt > 3600000) {
       const first = await search(0, deadline);
       catalog = { count: first.count, fetchedAt: now() };
     }
     const games = new Map();
+    const pages = Array.from({length: Math.max(1, Math.ceil(catalog.count / 25))}, (_, i) => i);
     for (let page = 0; page < 5 && games.size < 6 && now() < deadline; page++) {
-      const start = pick(Math.max(1, Math.ceil(catalog.count / 25))) * 25;
+      if (!pages.length) break;
+      const start = pages.splice(pick(pages.length), 1)[0] * 25;
       const data = await search(start, deadline);
-      const candidates = data.games.filter(item => item.reviewEstimate === null || item.reviewEstimate >= MIN_REVIEWS);
+      const candidates = data.games.filter(item => !excluded.has(item.id) && !games.has(item.id) && (item.reviewEstimate === null || item.reviewEstimate >= MIN_REVIEWS));
       for (let i = candidates.length - 1; i > 0; i--) {
         const j = pick(i + 1);
         [candidates[i], candidates[j]] = [candidates[j], candidates[i]];
@@ -119,14 +122,24 @@ export function createSteamClient({ fetchImpl = fetch, cachePath, snapshotPath, 
   }
   return {
     reviews,
-    async batch() {
+    async batch({ exclude = [] } = {}) {
+      const excluded = new Set(exclude.filter(id => Number.isSafeInteger(id) && id > 0).slice(-500));
+      const key = [...excluded].sort((a,b) => a-b).join(',');
       try {
-        if (!active) active = liveBatch().finally(() => { active = null; });
-        return await active;
+        if (!active.has(key)) active.set(key, liveBatch(excluded).finally(() => active.delete(key)));
+        return await active.get(key);
       } catch {
-        const backup = await readSnapshot(cachePath, 'cached') || await readSnapshot(snapshotPath, 'snapshot');
+        const cached = await readSnapshot(cachePath, 'cached');
+        const snapshot = await readSnapshot(snapshotPath, 'snapshot');
+        const backup = cached || snapshot;
         if (!backup) throw new Error('unavailable');
-        return backup;
+        // A tiny recent cache must not hide the larger bundled fallback library.
+        const stored = new Map();
+        for (const source of [snapshot, cached]) {
+          for (const game of source?.games ?? []) stored.set(game.id, {...game, dataMode:source.mode});
+        }
+        const unseen = [...stored.values()].filter(game => !excluded.has(game.id));
+        return {...backup, games: unseen.length >= 2 ? unseen : [...stored.values()]};
       }
     },
   };

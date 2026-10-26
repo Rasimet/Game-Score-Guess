@@ -1,10 +1,12 @@
 import { createGame, MAX_MISTAKES, validateGames } from './engine.js';
 import { translate } from './i18n.js';
+import { createDrawPool } from './pool.js';
 const $ = id => document.getElementById(id);
 let language = 'zh';
 try { language = localStorage.getItem('score-duel-language') === 'en' ? 'en' : 'zh'; } catch {}
 const t = (key, values) => translate(language, key, values);
-let game, data, loading = false, advancing = false, loadError = false, nextError = false, upcoming = [], refillPromise;
+let game, data, loading = false, advancing = false, loadError = false, nextError = false, refillPromise;
+const pool = createDrawPool();
 const formatScore = score => score.toFixed(1);
 const number = value => new Intl.NumberFormat(language === 'en' ? 'en-US' : 'zh-CN').format(value);
 
@@ -49,13 +51,13 @@ function render() {
   const state = game?.snapshot();
   const currentItems = state ? [state.left, state.right] : [];
   const modes = currentItems.map(item => item.dataMode);
-  const mode = modes.includes('snapshot') ? 'snapshot' : modes.includes('cached') ? 'cached' : data?.mode;
+  const mode = modes.includes('snapshot') ? 'snapshot' : modes.includes('cached') ? 'cached' : currentItems.length ? 'live' : data?.mode;
   $('data-status').textContent = data ? t(mode === 'live' ? 'live' : mode === 'cached' ? 'cached' : 'snapshot') : '';
   $('data-status').className = `data-status ${mode || ''}`;
   if (data) {
     const timestamps = currentItems.map(item => Date.parse(item.fetchedAt)).filter(Number.isFinite);
     const date = new Date(timestamps.length ? Math.min(...timestamps) : data.updatedAt).toLocaleString(language === 'en' ? 'en-GB' : 'zh-CN', {timeZone:'Asia/Hong_Kong'});
-    $('data-description').textContent = `${t('fetched',{date})} (UTC+8). ${t('poolInfo',{count:data.games.length})}`;
+    $('data-description').textContent = `${t('fetched',{date})} (UTC+8). ${t('poolInfo',{count:pool.size})}${pool.cycles ? ' ' + t('poolRecycled') : ''}`;
   } else $('data-description').textContent = t('loadInfo');
   const revealed = state && state.phase !== 'guessing';
   $('next-button').hidden = !revealed || loading;
@@ -116,13 +118,14 @@ function render() {
 }
 async function fetchGames() {
   try {
-    const response=await fetch('./api/games',{signal:AbortSignal.timeout(30000)});
+    const query=new URLSearchParams({exclude:pool.exclusions().join(',')});
+    const response=await fetch(`./api/games?${query}`,{signal:AbortSignal.timeout(30000)});
     if(!response.ok) throw new Error('api');
     const result=await response.json();
     result.games=result.games.filter(item=>Number.isSafeInteger(item.totalReviews)&&item.totalReviews>500);
     validateGames(result.games);
     if(result.provider!=='STEAM'||result.policy!=='steam-purchases-all-languages-v1')throw new Error('provider');
-    return {...result,games:result.games.map(item=>({...item,dataMode:result.mode}))};
+    return {...result,games:result.games.map(item=>({...item,dataMode:item.dataMode||result.mode}))};
   } catch {
     const response=await fetch('./data/games.json',{signal:AbortSignal.timeout(5000)});
     if(!response.ok)throw new Error('snapshot');
@@ -133,40 +136,50 @@ async function fetchGames() {
     return {...result,mode:'snapshot',games:result.games.map(item=>({...item,dataMode:'snapshot'}))};
   }
 }
-function shuffle(items) {
-  const result=[...items];
-  for(let i=result.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[result[i],result[j]]=[result[j],result[i]];}
-  return result;
-}
 async function refill() {
   if(!refillPromise)refillPromise=fetchGames().then(result=>{
-    const state=game?.snapshot();
-    const excluded=new Set([state?.left.id,state?.right.id,...upcoming.map(item=>item.id)]);
-    upcoming.push(...shuffle(result.games.filter(item=>!excluded.has(item.id))));data=result;
+    pool.add(result.games);data=result;
   }).finally(()=>{refillPromise=null;});
   return refillPromise;
 }
+async function drawNew(exclude = [], recycleExclude = exclude) {
+  let item=pool.draw(exclude);
+  if(item)return item;
+  // Try online additions before allowing any game to return.
+  await refill().catch(error=>{if(pool.size<2)throw error;});
+  item=pool.draw(exclude);
+  if(item)return item;
+  pool.recycle(recycleExclude);
+  item=pool.draw(recycleExclude);
+  if(!item)throw new Error('empty');
+  return item;
+}
 function showResults(){render();if(!$('over-dialog').open)$('over-dialog').showModal();}
-function guess(side){if(!game||loading||advancing||game.snapshot().phase!=='guessing')return;game.guess(side);nextError=false;render();if(game.snapshot().phase==='over')showResults();else{$('next-button').focus({preventScroll:true});if(upcoming.length<2)refill().catch(()=>{});}}
+function guess(side){if(!game||loading||advancing||game.snapshot().phase!=='guessing')return;game.guess(side);nextError=false;render();if(game.snapshot().phase==='over')showResults();else{$('next-button').focus({preventScroll:true});if(pool.available<2)refill().catch(()=>{});}}
 async function advance(){
   if(!game||advancing||loading)return;
   if(game.snapshot().phase==='over')return showResults();
   if(game.snapshot().phase!=='revealed')return;
   advancing=true;nextError=false;render();
   try{
-    if(!upcoming.length)await refill();
-    const current=game.snapshot().right.id;
-    upcoming=upcoming.filter(item=>item.id!==current);
-    if(!upcoming.length)throw new Error('empty');
-    game.next(upcoming.pop());
+    const state=game.snapshot();
+    const challenger=await drawNew([state.left.id,state.right.id],[state.right.id]);
+    game.next(challenger);
   }catch{nextError=true;}finally{advancing=false;render();if(!nextError)$('left-card').focus({preventScroll:true});}
 }
-function restart(){if(!game||loading||advancing)return;if($('over-dialog').open)$('over-dialog').close();game=createGame(data.games);const s=game.snapshot();upcoming=shuffle(data.games.filter(item=>item.id!==s.left.id&&item.id!==s.right.id));nextError=false;render();$('left-card').focus({preventScroll:true});}
-async function load(){
+function restart(){if(!game||loading||advancing)return;if($('over-dialog').open)$('over-dialog').close();load(false);}
+async function load(refresh = true){
   if(loading||advancing)return;
   loading=true;loadError=false;nextError=false;render();
   if(refillPromise)await refillPromise.catch(()=>{});
-  try{data=await fetchGames();game=createGame(data.games);const state=game.snapshot();upcoming=shuffle(data.games.filter(item=>item.id!==state.left.id&&item.id!==state.right.id));}
+  try{
+    if(refresh||!data)await refill();
+    const previous=game?.snapshot();
+    const exclude=previous?[previous.left.id,previous.right.id]:[];
+    const left=await drawNew(exclude,previous?[previous.right.id]:[]);
+    const right=await drawNew([left.id]);
+    game=createGame([left,right]);
+  }
   catch{loadError=true;}finally{loading=false;render();}
 }
 $('language-zh').addEventListener('click',()=>applyLanguage('zh'));
@@ -174,7 +187,7 @@ $('language-en').addEventListener('click',()=>applyLanguage('en'));
 document.querySelectorAll('[data-language]').forEach(button=>button.addEventListener('click',()=>applyLanguage(button.dataset.language)));
 $('left-card').addEventListener('click',()=>guess('left'));$('right-card').addEventListener('click',()=>guess('right'));
 $('next-button').addEventListener('click',advance);$('restart-button').addEventListener('click',restart);$('play-again').addEventListener('click',restart);
-$('retry-button').addEventListener('click',load);$('refresh-button').addEventListener('click',load);
+$('retry-button').addEventListener('click',()=>load());$('refresh-button').addEventListener('click',()=>load());
 $('rules-button').addEventListener('click',()=>$('rules-dialog').showModal());$('data-button').addEventListener('click',()=>$('data-dialog').showModal());$('review-button').addEventListener('click',()=>$('over-dialog').close());
 document.querySelectorAll('[data-close]').forEach(button=>button.addEventListener('click',()=>button.closest('dialog').close()));
 document.addEventListener('keydown',event=>{

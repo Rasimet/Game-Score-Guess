@@ -14,10 +14,16 @@ const localUrl = 'http://127.0.0.1:4173';
 const shouldOpen = process.argv.includes('--open');
 function openBrowser() {
   if (!shouldOpen) return;
-  const command = process.platform === 'win32' ? 'rundll32.exe' : process.platform === 'darwin' ? 'open' : 'xdg-open';
-  const args = process.platform === 'win32' ? ['url.dll,FileProtocolHandler', localUrl] : [localUrl];
+  const command = process.platform === 'win32' ? 'powershell.exe' : process.platform === 'darwin' ? 'open' : 'xdg-open';
+  const args = process.platform === 'win32'
+    ? ['-NoProfile', '-NonInteractive', '-Command', `Start-Process -FilePath '${localUrl}' -ErrorAction Stop`]
+    : [localUrl];
+  console.log(`Opening your default browser. If no tab appears, open: ${localUrl}`);
   const child = spawn(command, args, { windowsHide: true, stdio: 'ignore' });
-  child.on('error', () => console.log(`Open this address in your browser: ${localUrl}`));
+  child.on('error', error => console.log(`Could not open the browser (${error.message}). Open: ${localUrl}`));
+  child.on('exit', code => {
+    if (code !== 0) console.log(`The browser launch did not complete. Open: ${localUrl}`);
+  });
   child.unref();
 }
 
@@ -29,12 +35,13 @@ const server = createServer(async (request, response) => {
     const url = new URL(request.url, 'http://127.0.0.1');
     if (url.pathname === '/api/health') {
       response.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
-      response.end(JSON.stringify({ app: 'score-duel', version: 2 }));
+      response.end(JSON.stringify({ app: 'score-duel', version: 3 }));
       return;
     }
     if (url.pathname === '/api/games') {
       try {
-        const data = await steam.batch();
+        const exclude = (url.searchParams.get('exclude') || '').split(',').slice(-500).map(Number).filter(id => Number.isSafeInteger(id) && id > 0);
+        const data = await steam.batch({exclude});
         response.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
         response.end(JSON.stringify(data));
       } catch {
@@ -61,7 +68,7 @@ server.on('error', async error => {
     try {
       const response = await fetch(`${localUrl}/api/health`, { signal: AbortSignal.timeout(1500) });
       const health = response.ok ? await response.json() : null;
-      if (health?.app === 'score-duel' && health.version === 2) {
+      if (health?.app === 'score-duel' && health.version === 3) {
         console.log(`Score Duel is already running: ${localUrl}\nKeep the original server window open.`);
         openBrowser();
         return;

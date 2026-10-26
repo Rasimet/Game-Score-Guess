@@ -1,6 +1,16 @@
 @echo off
 setlocal
-cd /d "%~dp0"
+title Score Duel - Local Server
+cd /d "%~dp0" || goto folder_error
+echo.
+echo Score Duel - Steam Review Guessing Game
+echo Project: %~dp0
+echo Game URL: http://127.0.0.1:4173/
+echo.
+echo Starting the server and opening your browser...
+echo If no browser appears, open the Game URL above manually.
+echo Keep the server window open while playing.
+echo.
 
 set "SCORE_DUEL_NODE=node"
 where node >nul 2>nul
@@ -17,10 +27,17 @@ exit /b 1
 
 :run
 "%SCORE_DUEL_NODE%" scripts\serve.mjs --open
-if errorlevel 1 (
-  echo.
-  echo The local server could not start. See the message above.
-  pause
-  exit /b 1
-)
+set "SCORE_DUEL_EXIT=%ERRORLEVEL%"
+echo.
+if not "%SCORE_DUEL_EXIT%"=="0" echo The local server could not start. See the message above.
+if "%SCORE_DUEL_EXIT%"=="0" echo The launch command has finished. If the game is already running, keep its original server window open.
+echo Game URL: http://127.0.0.1:4173/
+echo Press any key to close this launcher window.
+pause >nul
+exit /b %SCORE_DUEL_EXIT%
+
+:folder_error
+echo Could not open the project folder. Move the whole project together and try again.
+pause
+exit /b 1
 endlocal
