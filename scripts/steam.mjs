@@ -3,7 +3,8 @@ import path from 'node:path';
 import { randomInt } from 'node:crypto';
 
 export const REVIEW_POLICY = { languages: ['all'], review_type: 0, purchase_type: 1, filter: 0, day_range: 0, cursor: '*', num_per_page: 1, filter_offtopic_activity: true };
-export const MIN_REVIEWS = 100;
+// "More than 100" means a game needs at least 101 matching reviews.
+export const MIN_REVIEWS = 101;
 
 export function scoreFromSummary(summary) {
   const positive = summary?.total_positive, negative = summary?.total_negative, total = summary?.total_reviews;

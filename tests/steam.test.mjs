@@ -12,6 +12,10 @@ test('approval is a rounded percentage of counts, never the Steam sentiment cate
   assert.equal(REVIEW_POLICY.purchase_type,1);
   assert.deepEqual(REVIEW_POLICY.languages,['all']);
 });
+test('review threshold rejects exactly 100 and accepts 101 matching reviews',()=>{
+  assert.throws(()=>scoreFromSummary({total_positive:90,total_negative:10,total_reviews:100}));
+  assert.equal(scoreFromSummary({total_positive:91,total_negative:10,total_reviews:101}).totalReviews,101);
+});
 const html='<a data-ds-appid="620"><img src="https://example.com/cover.jpg"><span class="title">Portal &amp; Friends</span><div class="search_released">18 Apr, 2011</div></a><a data-ds-appid="620"><span class="title">Portal &amp; Friends</span></a>';
 test('catalogue parser handles HTML entities, duplicate apps, and rejects non-app rows',()=>{
   const items=parseSearchPage(html+'<a data-ds-packageid="20"><span class="title">Package</span></a><a data-ds-appid="999" data-ds-descids="[3]"><span class="title">Excluded descriptor</span></a>');

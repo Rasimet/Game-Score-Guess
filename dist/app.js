@@ -118,13 +118,17 @@ async function fetchGames() {
   try {
     const response=await fetch('./api/games',{signal:AbortSignal.timeout(30000)});
     if(!response.ok) throw new Error('api');
-    const result=await response.json();validateGames(result.games);
+    const result=await response.json();
+    result.games=result.games.filter(item=>Number.isSafeInteger(item.totalReviews)&&item.totalReviews>100);
+    validateGames(result.games);
     if(result.provider!=='STEAM'||result.policy!=='steam-purchases-all-languages-v1')throw new Error('provider');
     return {...result,games:result.games.map(item=>({...item,dataMode:result.mode}))};
   } catch {
     const response=await fetch('./data/games.json',{signal:AbortSignal.timeout(5000)});
     if(!response.ok)throw new Error('snapshot');
-    const result=await response.json();validateGames(result.games);
+    const result=await response.json();
+    result.games=result.games.filter(item=>Number.isSafeInteger(item.totalReviews)&&item.totalReviews>100);
+    validateGames(result.games);
     if(result.provider!=='STEAM'||result.policy!=='steam-purchases-all-languages-v1')throw new Error('provider');
     return {...result,mode:'snapshot',games:result.games.map(item=>({...item,dataMode:'snapshot'}))};
   }
