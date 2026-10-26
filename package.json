@@ -1,0 +1,12 @@
+{
+  "name": "score-duel",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node scripts/serve.mjs",
+    "test": "node --test tests/engine.test.mjs",
+    "refresh-data": "node scripts/refresh-data.mjs"
+  },
+  "engines": { "node": ">=20" }
+}
