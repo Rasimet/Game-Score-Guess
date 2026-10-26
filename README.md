@@ -20,15 +20,23 @@
 
 需要 **Node.js 20 或更新版本**，没有第三方 JavaScript 包，不需要 `npm install`、Python、API 密钥或付费账号。
 
-从新终端进入本仓库目录：
+### Windows 一键启动
+
+直接双击仓库根目录的 **`start-local.cmd`**：自动启动本地服务器，并在默认浏览器打开游戏。路径包含空格时也可以使用，不需要先打开终端。
+
+启动窗口保持打开；在窗口里按 `Ctrl+C` 或关闭窗口即可停止。如果游戏已经运行，再次双击只会打开现有网页，不会创建第二个服务器。若 Node 没有加入 PATH，启动文件也会尝试使用本机已安装的 Codex Node 运行时；两者都不可用时会提示安装 Node.js。
+
+### 终端一行启动
+
+从新终端进入本仓库目录，运行：
 
 ```sh
-node scripts/serve.mjs
+node scripts/serve.mjs --open
 ```
 
-在浏览器打开 **http://127.0.0.1:4173**，按 `Ctrl+C` 停止服务器。不要直接双击 HTML：模块和题库需要通过 HTTP 加载。若端口被占用，请先关闭占用 4173 的旧服务器。
+如果安装了 npm，也可以运行 `npm start`，效果相同。若不想自动打开浏览器，使用 `node scripts/serve.mjs`。
 
-可选：安装了 npm 时也可以运行 `npm start`。
+本地地址：**http://127.0.0.1:4173**。按 `Ctrl+C` 停止服务器。不要直接双击 HTML：模块和题库需要通过 HTTP 加载。若 4173 被其他应用占用，服务器会提示错误，不会关闭其他应用。
 
 ## 数据从哪里来
 
@@ -46,6 +54,14 @@ node scripts/refresh-data.mjs
 ```
 
 该脚本只请求预先列出的 Steam 游戏 ID，跳过未提供评分的条目。更新后请检查数量与来源，并重新运行测试；题库数量可能改变。
+
+### 能否通过 API 实时读取整个 Metacritic 游戏库？
+
+2026-10-26 调研时，没有找到面向普通开发者、覆盖整个 Metacritic 游戏库的官方公开 API 文档。已公开的 [Fabric Origin Metacritic API 文档](https://developer.origin.fabricdata.com/origin/apis-all/metacritic-api-docs) 要求付费订阅与开发者审核，而且只列出电影和电视剧端点，不满足这个小游戏的需求。
+
+[RAWG 游戏 API](https://rawg.io/apidocs) 是可考虑的替代方案：包含 Metacritic 评分、封面和游戏平台资料，需要自己的 API Key。它属于第三方数据库，不能保证覆盖 Metacritic 全库或与原站实时同步。要接入时，应在后端保存 Key、检查平台对应的评分、处理限额与超时，并在服务不可用时回退到示例题库。
+
+当前版本没有接入 RAWG、没有使用 Metacritic 网站内部接口，默认仍从本地题库随机抽取。更新本地快照也不等同于每轮实时访问 Metacritic。
 
 ## 测试
 
@@ -65,6 +81,7 @@ node --test tests/engine.test.mjs
 - `dist/engine.js`：游戏状态、随机抽题、计分与轮次。
 - `dist/data/games.json`：可离线使用的评分快照。
 - `scripts/serve.mjs`：无第三方依赖的本地 HTTP 服务器。
+- `start-local.cmd`：Windows 双击启动、自动打开浏览器。
 - `scripts/refresh-data.mjs`：可选的数据更新脚本。
 - `tests/engine.test.mjs`：游戏规则测试。
 
@@ -77,4 +94,10 @@ node --test tests/engine.test.mjs
 - 当前 Git 历史记录了开发阶段；提交前需要推送到你自己的 **公开 GitHub 仓库**，退出登录检查可访问性，再把仓库 URL 提交到 Canvas。Sites 演示不替代 GitHub 仓库提交。
 - 网页源文件位于 `dist/`，可部署到任意静态托管；若使用 GitHub Pages，需要配置发布 `dist/` 的工作流。
 
-来源与素材使用说明见 [CREDITS.md](CREDITS.md)。开发和 AI 使用记录见 [PROCESS.md](PROCESS.md)。
+## 来源与致谢
+
+- 玩法由项目用户提出，第一版代码、样式、脚本、测试和文档由 OpenAI Codex 按需求生成与修改。未使用课程示例或第三方教程源代码；详细 AI 使用记录见 [PROCESS.md](PROCESS.md)。
+- 原始评分归属 [Metacritic](https://www.metacritic.com/)，本题库通过 Steam 商店公开接口获取其提供的 PC Metacritic 评分。每条记录保存原始来源和 [Steam](https://store.steampowered.com/) 商店链接。
+- 游戏封面从 Steam CDN 远程加载，图像、名称和商标归各自权利人所有；本项目仅用于课堂演示，未将游戏原图打包进仓库。截图中的游戏图像仍归原权利人所有。
+- [DM Sans](https://fonts.google.com/specimen/DM+Sans) 和 [Space Grotesk](https://fonts.google.com/specimen/Space+Grotesk) 通过 Google Fonts 可选加载，使用 SIL Open Font License；离线回退到系统字体。图形符号使用 Unicode 与 CSS。
+- 本项目与 Metacritic、Valve、Google 或游戏发行商无隶属或背书关系。
