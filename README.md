@@ -41,7 +41,7 @@ node scripts/serve.mjs --open
 
 **好评率 = 好评数量 ÷ 总评价数量 × 100%，四舍五入到一位小数。** 不使用 Metacritic、IGDB 或 Steam 的 1–9 评价类别编号来充当分数。
 
-统计通过 Steam 官方新评价接口 `IUserReviewsService/GetAppReviews/v1/` 获取，统一参数：所有语言、所有评价类型、Steam 购买者、过滤非相关活动、首个游标页面。只选 **评价数严格大于 100（即至少 101 条符合口径评价）** 的游戏。它是玩家评价占比，可能与按语言或其他设置筛选的商店页面显示不同。
+统计通过 Steam 官方新评价接口 `IUserReviewsService/GetAppReviews/v1/` 获取，统一参数：所有语言、所有评价类型、Steam 购买者、过滤非相关活动、首个游标页面。只选 **评价数严格大于 500（即至少 501 条符合口径评价）** 的游戏。它是玩家评价占比，可能与按语言或其他设置筛选的商店页面显示不同。
 
 - **在线取样**：从 Steam 当前可见商店搜索目录随机抽取结果页，打散页内候选，再通过官方评价 API 获取真实统计。每批最多 6 款，来自多个页面；新游戏会在当前批次用完后继续抽取。
 - 搜索目录使用公开商店页面的 `search/results` 接口，它不是有稳定兼容保证的开发者 API。目录采用商店评价排序，筛掉评价太少的游戏；不承诺全 Steam 库覆盖或筛选后的均匀随机。下架、地区或商店偏好受限的游戏可能缺席。
@@ -109,7 +109,7 @@ Choose a cover or press `←` / `→`. After the reveal, use Next round or `Ente
 
 ### Data and limitations
 
-Approval means `positive reviews / total reviews × 100`, using all languages, Steam purchases, off-topic filtering and more than 100 matching reviews. Scores come from the official [Steam review API](https://partner.steamgames.com/doc/webapi/IUserReviewsService), not Metacritic or IGDB.
+Approval means `positive reviews / total reviews × 100`, using all languages, Steam purchases, off-topic filtering and more than 500 matching reviews. Scores come from the official [Steam review API](https://partner.steamgames.com/doc/webapi/IUserReviewsService), not Metacritic or IGDB.
 
 Online mode samples pages from Steam's visible storefront catalogue and queries real review statistics. The storefront search endpoint has no stable developer API guarantee. Filtering and page sampling do not guarantee uniform selection across the whole Steam catalogue. Live data is cached for 10 minutes. If services fail, the game clearly labels cached data or a bundled snapshot of 50 real games. Each record preserves its counts, source and retrieval time.
 

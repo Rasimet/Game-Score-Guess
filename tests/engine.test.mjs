@@ -70,7 +70,7 @@ test('shipped snapshot has authentic Steam review counts and matching percentage
   for (const item of snapshot) {
     assert.equal(item.platform, 'STEAM');
     assert.equal(item.positiveCount + item.negativeCount, item.totalReviews);
-    assert.ok(item.totalReviews > 100);
+    assert.ok(item.totalReviews > 500);
     assert.equal(item.score, Math.round(item.positiveCount / item.totalReviews * 1000) / 10);
     assert.match(item.source, /^https:\/\/store\.steampowered\.com\/app\//);
     assert.match(item.cover, /^https:\/\//);
